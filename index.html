@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>WaterBucket</title>
+</head>
+<body>
+<style>
+	*{
+		box-sizing:border-box ;
+		margin: 0;
+		padding: 0;
+	}
+	body{
+		overflow: hidden;
+	}
+	#canvas{
+		background: url('./background.png');
+/*		background-position: center;*/
+/*		background-size: 100%;*/
+/*		background-repeat: no-repeat;*/
+	}
+	audio{
+		display: none
+	}
+</style>
+<audio autoplay controls loop id="bgmusic">
+	<source src="./music.mp3">
+</audio>
+<audio autoplay id="dropSound"controls  >
+	<source src="./drop.mp3">
+</audio>
+<canvas id="canvas"></canvas>
+<script >
+	window.addEventListener('load',(e)=>{
+	const canv = document.getElementById('canvas');
+	const ctx = canv.getContext('2d');
+	const dropSound = document.getElementById('dropSound')
+	const bgmusic = document.getElementById('bgmusic');
+     
+	var  CANVAS_WIDTH = canv.width = innerWidth;
+	var CANVAS_HEIGHT = canv.height = innerHeight;
+	const FPS = 60;
+    class Input{
+    	constructor(){
+    		this.pos = {x:0,y:0};
+
+    		this.keys = {
+    			a:false,
+    			d:false,
+    			w:false,
+    			s:false,
+    			ArrowLeft:false,
+    			ArrowRight:false
+    		}
+    		window.addEventListener('mousemove',(e)=>{
+    			this.pos.x=e.x;
+    		})
+    		window.addEventListener('touchmove',(e)=>{
+    			var touches = e.touches[0];
+    			this.pos.x=touches.clientX;
+    			// console.log(e.x)
+    		})
+    		window.addEventListener("keydown",(e)=>{
+    			this.keys[e.key] = true;
+    		})
+    		window.addEventListener("keyup",(e)=>{
+    			this.keys[e.key] = false;
+    		})
+    	}
+    }
+
+	class Bucket{
+		constructor(imageSrc) {
+			this.image = new Image();
+			this.image.src = imageSrc;
+			this.width = 100;
+			this.height = 100;
+			this.pos={x:0,y:CANVAS_HEIGHT-this.height}
+			this.vel={x:0,y:0};
+		}
+
+		draw(input,ctx){
+ 		  if(input.keys.ArrowLeft){
+ 		  	this.vel.x = -10;
+ 		  }else if(input.keys.ArrowRight){
+ 		  	this.vel.x = 10
+ 		  }else{
+ 		  	this.vel.x=0;
+ 		  }
+		  this.pos.x= input.pos.x;
+ 		  ctx.drawImage(this.image,this.pos.x,this.pos.y,this.width,this.height);
+		}
+
+		update(){
+			if(this.pos.x + this.width >canv.width){
+				this.pos.x = canv.width-this.width;
+			}
+			if(this.pos.x< 0){
+				this.pos.x = 0;
+			}
+			this.pos.x += this.vel.x;
+           		}
+
+	}
+
+	class WaterDrop{
+		constructor(imageSrc){
+			this.image = new Image();
+			this.image.src = imageSrc;
+			this.width = 100;
+			this.height = 100;
+			this.pos ={x:Math.random()*CANVAS_WIDTH-this.width,y:0};
+			this.vel={x:0,y:5}
+		}
+
+		update(ctx){
+			this.pos.y+=this.vel.y;
+			this.draw(ctx)
+		}
+
+		draw(ctx){
+			 ctx.drawImage(this.image,this.pos.x,this.pos.y,this.width,this.height);
+		}
+	}
+  
+
+  const bucket = new Bucket('./bucket.png');
+  // const WaterDrop = new WaterDrop('./drop.png');
+  const inputHandler = new Input();
+  const Droplets = [new WaterDrop('./drop.png')]
+  
+    setInterval(()=>{
+    	Droplets.push(new WaterDrop('./drop.png'))
+    },1500);
+
+	function GameLoop() {
+
+    console.log('looping...')
+    ctx.clearRect(0,0,canv.width,canv.height);
+  
+    Droplets.forEach((drop, index) => {
+        // Check if the drop is within the bucket's width and has reached its top
+        if (
+            drop.pos.y >bucket.pos.y - bucket.height &&
+            drop.pos.x >= bucket.pos.x &&
+            drop.pos.x <= bucket.pos.x + bucket.width
+        ) {
+            // Remove the drop
+            Droplets.splice(index, 1);
+        dropSound.play();
+        }
+        drop.update(ctx);
+    });
+    bucket.draw(inputHandler,ctx)
+    bucket.update(); // Move the bucket
+}
+
+     
+	setInterval(GameLoop,1000/FPS);
+	 function enableAudio() {
+        bgmusic.play().catch(error => console.warn("Music autoplay blocked:", error));
+        dropSound.play().catch(error => console.warn("Drop sound autoplay blocked:", error));
+
+        // Remove event listener after activation
+        window.removeEventListener('click', enableAudio);
+        window.removeEventListener('keydown', enableAudio);
+    }
+
+    // Listen for user interaction
+    window.addEventListener('click', enableAudio);
+    window.addEventListener('keydown', enableAudio);
+	});
+
+</script>
+</body>
+</html>
